@@ -1,48 +1,77 @@
 from fastmcp import FastMCP
 import os
-import sqlite3
+import aiosqlite
+import tempfile
+import asyncio
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "expenses.db")
+# Use temporary directory which should be writable
+TEMP_DIR = tempfile.gettempdir()
+DB_PATH = os.path.join(TEMP_DIR, "expenses.db")
 CATEGORIES_PATH = os.path.join(
     os.path.dirname(__file__),
     "categories.json"
 )
 
+print(f"Database path: {DB_PATH}")
+
 mcp = FastMCP("ExpenseTracker")
 
 
-def init_db():
-    with sqlite3.connect(DB_PATH) as c:
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS expenses(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                date TEXT NOT NULL,
-                amount REAL NOT NULL,
-                category TEXT NOT NULL,
-                subcategory TEXT DEFAULT '',
-                note TEXT DEFAULT ''
+async def init_db():
+    try:
+        # Create database with explicit write permissions
+        async with aiosqlite.connect(DB_PATH) as c:
+            await c.execute("PRAGMA journal_mode=WAL")  # Better for concurrent access
+
+            await c.execute("""
+                CREATE TABLE IF NOT EXISTS expenses(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    category TEXT NOT NULL,
+                    subcategory TEXT DEFAULT '',
+                    note TEXT DEFAULT ''
+                )
+            """)
+
+            # Test write access
+            await c.execute(
+                "INSERT OR IGNORE INTO expenses(date, amount, category) "
+                "VALUES ('2000-01-01', 0, 'test')"
             )
-        """)
+
+            await c.execute(
+                "DELETE FROM expenses WHERE category = 'test'"
+            )
+
+            await c.commit()
+
+            print("Database initialized successfully with write access")
+
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        raise
 
 
-init_db()
+asyncio.run(init_db())
 
 @mcp.tool()
-def add_expense(date, amount, category, subcategory="", note=""):
+async def add_expense(date, amount, category, subcategory="", note=""):
     '''Add a new expense to the database.'''
-    with sqlite3.connect(DB_PATH) as c:
-        cur = c.execute(
+    async with aiosqlite.connect(DB_PATH) as c:
+        cur = await c.execute(
             "INSERT INTO expenses(date, amount, category, subcategory, note) VALUES (?,?,?,?,?)",
             (date, amount, category, subcategory, note)
         )
+        await c.commit()
         return {"status": "ok", "id": cur.lastrowid}
 
 
 @mcp.tool()
-def list_expenses(start_date, end_date):
+async def list_expenses(start_date, end_date):
     """List expense entries within an inclusive date range."""
-    with sqlite3.connect(DB_PATH) as c:
-        cur = c.execute(
+    async with aiosqlite.connect(DB_PATH) as c:
+        cur = await c.execute(
             """
             SELECT id, date, amount, category, subcategory, note
             FROM expenses
@@ -52,12 +81,13 @@ def list_expenses(start_date, end_date):
             (start_date, end_date)
         )
         cols = [d[0] for d in cur.description]
-        return [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = await cur.fetchall()
+        return [dict(zip(cols, r)) for r in rows]
 
 @mcp.tool()
-def summarize(start_date, end_date, category=None):
+async def summarize(start_date, end_date, category=None):
     """Summarize expenses by category within an inclusive date range."""
-    with sqlite3.connect(DB_PATH) as c:
+    async with aiosqlite.connect(DB_PATH) as c:
         query = """
             SELECT category, SUM(amount) AS total_amount
             FROM expenses
@@ -71,15 +101,19 @@ def summarize(start_date, end_date, category=None):
 
         query += " GROUP BY category ORDER BY category ASC"
 
-        cur = c.execute(query, params)
+        cur = await c.execute(query, params)
         cols = [d[0] for d in cur.description]
-        return [dict(zip(cols, r)) for r in cur.fetchall()]
+        rows = await cur.fetchall()
+        return [dict(zip(cols, r)) for r in rows]
 
 @mcp.resource("expense://categories", mime_type="application/json")
-def categories():
+async def categories():
     # Read fresh each time so you can edit the file without restarting
-    with open(CATEGORIES_PATH, "r", encoding="utf-8") as f:
-        return f.read()
+    def _read():
+        with open(CATEGORIES_PATH, "r", encoding="utf-8") as f:
+            return f.read()
+
+    return await asyncio.to_thread(_read)
 
 # Start the server
 if __name__ == "__main__":
