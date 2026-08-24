@@ -1,0 +1,166 @@
+{
+  "food": [
+    "groceries",
+    "fruits_vegetables",
+    "dairy_bakery",
+    "dining_out",
+    "coffee_tea",
+    "snacks",
+    "delivery_fees",
+    "other"
+  ],
+  "transport": [
+    "fuel",
+    "public_transport",
+    "taxi_ride_sharing",
+    "parking",
+    "tolls",
+    "vehicle_maintenance",
+    "vehicle_insurance",
+    "other"
+  ],
+  "housing": [
+    "rent",
+    "mortgage",
+    "home_maintenance",
+    "repairs",
+    "furniture",
+    "appliances",
+    "property_tax",
+    "other"
+  ],
+  "utilities": [
+    "electricity",
+    "water",
+    "gas",
+    "internet",
+    "mobile_phone",
+    "cable_tv",
+    "other"
+  ],
+  "health": [
+    "doctor",
+    "hospital",
+    "medicines",
+    "pharmacy",
+    "dental",
+    "health_insurance",
+    "medical_tests",
+    "other"
+  ],
+  "education": [
+    "tuition",
+    "books",
+    "courses",
+    "online_courses",
+    "school_supplies",
+    "exam_fees",
+    "certifications",
+    "other"
+  ],
+  "family_kids": [
+    "childcare",
+    "school_fees",
+    "toys",
+    "kids_clothing",
+    "baby_products",
+    "activities",
+    "allowance",
+    "other"
+  ],
+  "shopping": [
+    "clothing",
+    "shoes",
+    "electronics",
+    "home_decor",
+    "personal_items",
+    "online_shopping",
+    "other"
+  ],
+  "entertainment": [
+    "movies",
+    "games",
+    "concerts",
+    "events",
+    "hobbies",
+    "sports",
+    "books",
+    "other"
+  ],
+  "subscriptions": [
+    "netflix",
+    "spotify",
+    "youtube",
+    "amazon_prime",
+    "cloud_storage",
+    "software",
+    "other"
+  ],
+  "personal_care": [
+    "haircut",
+    "salon",
+    "beauty",
+    "skincare",
+    "gym",
+    "fitness",
+    "other"
+  ],
+  "travel": [
+    "flights",
+    "train",
+    "bus",
+    "hotel",
+    "travel_food",
+    "travel_activities",
+    "travel_insurance",
+    "other"
+  ],
+  "finance": [
+    "bank_fees",
+    "credit_card_fees",
+    "loan_payment",
+    "interest",
+    "investment",
+    "insurance",
+    "taxes",
+    "other"
+  ],
+  "gifts": [
+    "birthday",
+    "wedding",
+    "anniversary",
+    "festival",
+    "charity",
+    "donation",
+    "other"
+  ],
+  "work": [
+    "office_supplies",
+    "business_travel",
+    "professional_development",
+    "work_meals",
+    "work_equipment",
+    "other"
+  ],
+  "pets": [
+    "pet_food",
+    "veterinary",
+    "pet_grooming",
+    "pet_supplies",
+    "pet_insurance",
+    "other"
+  ],
+  "income": [
+    "salary",
+    "freelance",
+    "business",
+    "interest",
+    "dividend",
+    "refund",
+    "other"
+  ],
+  "other": [
+    "miscellaneous",
+    "uncategorized"
+  ]
+}
