@@ -16,6 +16,11 @@ print(f"Database path: {DB_PATH}")
 
 mcp = FastMCP("ExpenseTracker")
 
+# Initialization is lazy: importing this module must not touch the event loop,
+# because loaders like `fastmcp inspect` import it from inside a running loop.
+_db_ready = False
+_db_lock = asyncio.Lock()
+
 
 async def init_db():
     try:
@@ -53,11 +58,22 @@ async def init_db():
         raise
 
 
-asyncio.run(init_db())
+async def ensure_db():
+    """Run init_db() exactly once, on first tool call."""
+    global _db_ready
+    if _db_ready:
+        return
+    async with _db_lock:
+        if _db_ready:
+            return
+        await init_db()
+        _db_ready = True
+
 
 @mcp.tool()
 async def add_expense(date, amount, category, subcategory="", note=""):
     '''Add a new expense to the database.'''
+    await ensure_db()
     async with aiosqlite.connect(DB_PATH) as c:
         cur = await c.execute(
             "INSERT INTO expenses(date, amount, category, subcategory, note) VALUES (?,?,?,?,?)",
@@ -70,6 +86,7 @@ async def add_expense(date, amount, category, subcategory="", note=""):
 @mcp.tool()
 async def list_expenses(start_date, end_date):
     """List expense entries within an inclusive date range."""
+    await ensure_db()
     async with aiosqlite.connect(DB_PATH) as c:
         cur = await c.execute(
             """
@@ -84,9 +101,11 @@ async def list_expenses(start_date, end_date):
         rows = await cur.fetchall()
         return [dict(zip(cols, r)) for r in rows]
 
+
 @mcp.tool()
 async def summarize(start_date, end_date, category=None):
     """Summarize expenses by category within an inclusive date range."""
+    await ensure_db()
     async with aiosqlite.connect(DB_PATH) as c:
         query = """
             SELECT category, SUM(amount) AS total_amount
@@ -106,6 +125,7 @@ async def summarize(start_date, end_date, category=None):
         rows = await cur.fetchall()
         return [dict(zip(cols, r)) for r in rows]
 
+
 @mcp.resource("expense://categories", mime_type="application/json")
 async def categories():
     # Read fresh each time so you can edit the file without restarting
@@ -114,6 +134,7 @@ async def categories():
             return f.read()
 
     return await asyncio.to_thread(_read)
+
 
 # Start the server
 if __name__ == "__main__":
